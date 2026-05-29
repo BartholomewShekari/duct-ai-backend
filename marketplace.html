@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="backend-url" content="https://interior-ecommerce-production.up.railway.app">
+  <script src="static/backend-config.js"></script>
+  <title>Second-Hand Marketplace — Interior Duct Ltd</title>
+  <link rel="stylesheet" href="duct-ai-widget.css?v=20260429">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #f7f7f9 0%, #efefef 100%);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+    }
+
+    .marketplace-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      margin-bottom: 3rem;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: #1B3A6B;
+      font-weight: 600;
+    }
+
+    .btn-back {
+      padding: 0.75rem 1.5rem;
+      background: #1B3A6B;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+      background: #142850;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(27, 58, 107, 0.3);
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 2rem;
+      padding: 0;
+    }
+
+    .product-card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      background: linear-gradient(135deg, #e8eef7 0%, #f0f3fa 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: #ddd;
+    }
+
+    .product-content {
+      padding: 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-badge {
+      display: inline-block;
+      background: #E8F1FE;
+      color: #1B3A6B;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 0.8rem;
+      width: fit-content;
+    }
+
+    .product-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #1B3A6B;
+      margin-bottom: 0.6rem;
+    }
+
+    .product-description {
+      color: #555;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1.2rem;
+      flex-grow: 1;
+      min-height: 60px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-actions {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-enquire {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: #1B3A6B;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .btn-enquire:hover {
+      background: #142850;
+    }
+
+    .btn-admin {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      background: #fff;
+      color: #1B3A6B;
+      border: 2px solid #1B3A6B;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+    }
+
+    .btn-admin:hover {
+      background: #1B3A6B;
+      color: #fff;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: #666;
+      font-size: 1.1rem;
+    }
+
+    .error {
+      background: #FEE;
+      color: #B33;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .product-actions {
+        flex-direction: column;
+      }
+
+      .btn-enquire, .btn-admin {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="marketplace-container">
+    <header>
+      <h1>Second-Hand Marketplace</h1>
+      <button class="btn-back" onclick="goBackHome()">← Back to Home</button>
+    </header>
+
+    <div id="productsContainer" class="products-grid">
+      <div class="loading">Loading marketplace...</div>
+    </div>
+
+    <!-- ========================================================= SECOND-HAND MARKETPLACE SECTION (moved from main page) -->
+    <section class="second-hand-marketplace-section" id="second-hand-marketplace-details" style="margin-top: 4rem;">
+      <div class="sec-hdr" style="text-align: center; padding: 2rem 1rem; margin-bottom: 2rem;">
+        <h2 style="font-size: 2rem; color: #1B3A6B; font-weight: 600; margin-bottom: 0.5rem;">
+          Pre-Owned <em style="font-style: italic; color: #7B5C3E;">Industrial Equipment</em>
+        </h2>
+        <div style="width: 60px; height: 3px; background: #E8A76B; margin: 1rem auto; border-radius: 2px;"></div>
+        <p style="color: #666; font-family: 'DM Sans', sans-serif; font-size: 1.05rem; max-width: 720px; margin: 1.2rem auto 0; line-height: 1.8;">
+          Explore verified second-hand heavy-duty furniture manufacturing and woodworking machinery.
+          Each industrial machine is professionally maintained and suitable for factory production,
+          cabinet fabrication, CNC processing, panel cutting, edge banding, and commercial furniture operations.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; padding: 0;">
+
+        <!-- CNC ROUTER -->
+        <div style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%;">
+          <img src="IDL_Product_branding/CNC_Router.jpg" alt="Industrial CNC Router" style="width: 100%; height: 220px; object-fit: cover;">
+          <div style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 1.2rem; font-weight: 600; color: #1B3A6B; margin-bottom: 0.8rem;">
+              Industrial CNC Router
+            </div>
+            <p style="color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; flex-grow: 1;">
+              Heavy-duty CNC cutting machine designed for precision furniture manufacturing,
+              cabinetry production, and industrial wood processing applications.
+            </p>
+            <a href="#"
+               onclick="openWhatsApp('Second-Hand Industrial CNC Router');return false;"
+               style="display:inline-block;padding:0.75rem 1.4rem;background:#E8A76B;color:#fff;text-decoration:none;border-radius:4px;font-size:0.92rem;font-weight:600;letter-spacing:0.5px;text-align:center;">
+               Enquiry
+            </a>
+          </div>
+        </div>
+
+        <!-- EDGE BANDER -->
+        <div style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%;">
+          <img src="IDL_Product_branding/Edge_Bander.jpg" alt="Automatic Edge Bander" style="width: 100%; height: 220px; object-fit: cover;">
+          <div style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 1.2rem; font-weight: 600; color: #1B3A6B; margin-bottom: 0.8rem;">
+              Automatic Edge Bander
+            </div>
+            <p style="color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; flex-grow: 1;">
+              Commercial-grade edge banding machine for MDF, plywood, laminated panels,
+              and premium furniture finishing operations.
+            </p>
+            <a href="#"
+               onclick="openWhatsApp('Second-Hand Automatic Edge Bander');return false;"
+               style="display:inline-block;padding:0.75rem 1.4rem;background:#E8A76B;color:#fff;text-decoration:none;border-radius:4px;font-size:0.92rem;font-weight:600;letter-spacing:0.5px;text-align:center;">
+               Enquiry
+            </a>
+          </div>
+        </div>
+
+        <!-- PANEL SAW -->
+        <div style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%;">
+          <img src="IDL_Product_branding/Panel_Saw.jpg" alt="Industrial Panel Saw" style="width: 100%; height: 220px; object-fit: cover;">
+          <div style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 1.2rem; font-weight: 600; color: #1B3A6B; margin-bottom: 0.8rem;">
+              Heavy-Duty Panel Saw
+            </div>
+            <p style="color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; flex-grow: 1;">
+              Precision industrial panel saw engineered for high-volume cutting,
+              sheet sizing, and large-scale furniture manufacturing.
+            </p>
+            <a href="#"
+               onclick="openWhatsApp('Second-Hand Heavy-Duty Panel Saw');return false;"
+               style="display:inline-block;padding:0.75rem 1.4rem;background:#E8A76B;color:#fff;text-decoration:none;border-radius:4px;font-size:0.92rem;font-weight:600;letter-spacing:0.5px;text-align:center;">
+               Enquiry
+            </a>
+          </div>
+        </div>
+
+        <!-- SPRAY BOOTH -->
+        <div style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%;">
+          <img src="IDL_Product_branding/Spray_Booth.jpg" alt="Industrial Spray Booth" style="width: 100%; height: 220px; object-fit: cover;">
+          <div style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 1.2rem; font-weight: 600; color: #1B3A6B; margin-bottom: 0.8rem;">
+              Industrial Spray Booth
+            </div>
+            <p style="color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; flex-grow: 1;">
+              Professional finishing booth suitable for furniture coating,
+              lacquer applications, and controlled industrial painting environments.
+            </p>
+            <a href="#"
+               onclick="openWhatsApp('Second-Hand Industrial Spray Booth');return false;"
+               style="display:inline-block;padding:0.75rem 1.4rem;background:#E8A76B;color:#fff;text-decoration:none;border-radius:4px;font-size:0.92rem;font-weight:600;letter-spacing:0.5px;text-align:center;">
+               Enquiry
+            </a>
+          </div>
+        </div>
+
+        <!-- AIR COMPRESSOR -->
+        <div style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%;">
+          <img src="IDL_Product_branding/Air_Compressor.jpg" alt="Industrial Air Compressor" style="width: 100%; height: 220px; object-fit: cover;">
+          <div style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 1.2rem; font-weight: 600; color: #1B3A6B; margin-bottom: 0.8rem;">
+              Industrial Air Compressor
+            </div>
+            <p style="color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; flex-grow: 1;">
+              Reliable compressed-air system for pneumatic production equipment,
+              spray systems, and factory workshop operations.
+            </p>
+            <a href="#"
+               onclick="openWhatsApp('Second-Hand Industrial Air Compressor');return false;"
+               style="display:inline-block;padding:0.75rem 1.4rem;background:#E8A76B;color:#fff;text-decoration:none;border-radius:4px;font-size:0.92rem;font-weight:600;letter-spacing:0.5px;text-align:center;">
+               Enquiry
+            </a>
+          </div>
+        </div>
+
+        <!-- WOOD LATHE -->
+        <div style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%;">
+          <img src="IDL_Product_branding/Wood_Lathe.jpg" alt="Industrial Wood Lathe" style="width: 100%; height: 220px; object-fit: cover;">
+          <div style="padding: 1.5rem; flex-grow: 1; display: flex; flex-direction: column;">
+            <div style="font-size: 1.2rem; font-weight: 600; color: #1B3A6B; margin-bottom: 0.8rem;">
+              Industrial Wood Lathe
+            </div>
+            <p style="color: #666; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; flex-grow: 1;">
+              Precision wood-turning machine for decorative furniture components,
+              balusters, columns, and custom woodworking fabrication.
+            </p>
+            <a href="#"
+               onclick="openWhatsApp('Second-Hand Industrial Wood Lathe');return false;"
+               style="display:inline-block;padding:0.75rem 1.4rem;background:#E8A76B;color:#fff;text-decoration:none;border-radius:4px;font-size:0.92rem;font-weight:600;letter-spacing:0.5px;text-align:center;">
+               Enquiry
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // Navigate back to main website home
+    function goBackHome() {
+      window.location.href = 'https://www.interiorductltd.com/';
+    }
+
+    async function loadMarketplace() {
+      try {
+        console.log('Loading marketplace products...');
+
+        // Try to fetch from Flask API endpoint first
+        let res = await fetch('/api/promotions').catch(() => null);
+        let data;
+
+        if (res && res.ok) {
+          const apiData = await res.json();
+          data = apiData.second_hand || { products: [] };
+          console.log('Products loaded from API:', data);
+        } else {
+          // Fallback to local JSON file
+          res = await fetch('./second_hand_products.json').catch(() => null);
+          if (!res || !res.ok) {
+            res = await fetch('/second_hand_products.json').catch(() => null);
+          }
+          if (!res || !res.ok) {
+            throw new Error('Could not find second_hand_products.json file');
+          }
+          data = await res.json();
+          console.log('Products loaded from JSON:', data);
+        }
+
+        const container = document.getElementById('productsContainer');
+        container.innerHTML = '';
+
+        const products = data.products || [];
+        if (!products || products.length === 0) {
+          container.innerHTML = '<p class="error">No products available at this time.</p>';
+          return;
+        }
+
+        const categoryIcons = {
+          'angle-grinder': '⚙️',
+          'planer': '🔨',
+          'circular-saw': '🔩',
+          'compressor': '💨',
+          'jig-saw': '✂️',
+          'impact-driver': '⚡',
+          'hammer-drill': '🔨',
+          'hand-planes': '🪵',
+          'saw-blades': '⚡',
+          'dehumidifier': '💧',
+          'band-saw': '🔧',
+          'fittings': '🎨',
+          'lighting': '💡'
+        };
+
+        products.forEach((product) => {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+
+          const category = getCategoryName(product.id);
+          const icon = categoryIcons[product.id] || '📦';
+
+          // Use product image or fallback to emoji
+          let imageHTML = '';
+          if (product.image && product.image.trim()) {
+            imageHTML = `<div class="product-image"><img src="${product.image}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.style.fontSize='3rem';this.parentElement.textContent='${icon}'"></div>`;
+          } else {
+            imageHTML = `<div class="product-image">${icon}</div>`;
+          }
+
+          const description = product.description || 'Quality second-hand equipment available for inspection and purchase.';
+
+          card.innerHTML = `
+            ${imageHTML}
+            <div class="product-content">
+              <span class="product-badge">${category}</span>
+              <h3 class="product-name">${product.name}</h3>
+              <p class="product-description">${description}</p>
+              <div class="product-actions">
+                <button class="btn-enquire" onclick="enquireViaWhatsApp('${product.name.replace(/'/g, "\\'")}')">
+                  📱 Enquire
+                </button>
+                <a href="/admin/index.html#images" class="btn-admin">
+                  📸 Upload Image
+                </a>
+              </div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        });
+
+        console.log('Marketplace loaded successfully with ' + products.length + ' products');
+
+      } catch (e) {
+        console.error('Failed to load marketplace:', e);
+        const container = document.getElementById('productsContainer');
+        container.innerHTML = `<div class="error">
+          <strong>Unable to load marketplace</strong><br>
+          ${e.message}<br>
+          <small>Please try refreshing the page or contact support</small>
+        </div>`;
+      }
+    }
+
+    function getCategoryName(productId) {
+      const categories = {
+        'angle-grinder': 'Tools & Machines',
+        'planer': 'Tools & Machines',
+        'circular-saw': 'Tools & Machines',
+        'compressor': 'Tools & Machines',
+        'jig-saw': 'Tools & Machines',
+        'impact-driver': 'Tools & Machines',
+        'hammer-drill': 'Tools & Machines',
+        'hand-planes': 'Tools & Machines',
+        'saw-blades': 'Accessories',
+        'dehumidifier': 'Tools & Machines',
+        'band-saw': 'Tools & Machines',
+        'fittings': 'Furniture Fittings',
+        'lighting': 'Lighting'
+      };
+      return categories[productId] || 'Equipment';
+    }
+
+    function enquireViaWhatsApp(productName) {
+      const phoneNumber = '2348036850229';
+      const message = `Hi, I'm interested in the ${productName} from your Second-Hand Marketplace. Can you provide more details and pricing?`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+    }
+
+    function openWhatsApp(message) {
+      const phoneNumber = '2348036850229';
+      if (typeof message === 'object') {
+        message = `Hi, I'm interested in the ${message.name}. Can you provide more details and pricing?`;
+      } else if (typeof message === 'string') {
+        message = `Hi, I'm interested in the ${message}. Can you provide more details and pricing?`;
+      }
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+    }
+
+    // Load marketplace on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadMarketplace);
+    } else {
+      loadMarketplace();
+    }
+  </script>
+</body>
+</html>
