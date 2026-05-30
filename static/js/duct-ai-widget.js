@@ -20,6 +20,7 @@
       <div class="duct-ai-widget-notification" id="ductAiNotification" hidden>
         <span class="duct-ai-widget-notification-icon" id="ductAiNotificationIcon"></span>
         <div class="duct-ai-widget-notification-text" id="ductAiNotificationText"></div>
+        <button type="button" class="duct-ai-widget-notification-action" id="ductAiNotificationAction" hidden>Open</button>
         <button type="button" class="duct-ai-widget-notification-close" id="ductAiNotificationClose" aria-label="Dismiss notification">&times;</button>
       </div>
       <div class="duct-ai-widget-messages" id="ductAiMessages"></div>
@@ -39,6 +40,7 @@
   const notification = container.querySelector('#ductAiNotification');
   const notificationIcon = container.querySelector('#ductAiNotificationIcon');
   const notificationText = container.querySelector('#ductAiNotificationText');
+  const notificationAction = container.querySelector('#ductAiNotificationAction');
   const notificationClose = container.querySelector('#ductAiNotificationClose');
 
   const PROMO_SOURCE_ICONS = {
@@ -53,16 +55,22 @@
   };
 
   let currentNotificationUrl = '';
+  const DEFAULT_MARKETPLACE_LINK = `${BACKEND_URL.replace(/\/$/, '')}/marketplace.html`;
 
   function renderPromoNotification({ source = 'marketplace', text = 'New promotion update available.', url = '' } = {}) {
     const iconHtml = PROMO_SOURCE_ICONS[source] || PROMO_SOURCE_ICONS.marketplace;
     notificationIcon.innerHTML = iconHtml;
     notificationText.textContent = text;
-    currentNotificationUrl = url || '';
+    currentNotificationUrl = url || (source === 'marketplace' ? DEFAULT_MARKETPLACE_LINK : '');
     notification.dataset.source = source;
     notification.className = `duct-ai-widget-notification ${source}`;
 
-    if (url) {
+    const buttonLabel = source === 'marketplace' ? 'Open' : 'View';
+    notificationAction.textContent = buttonLabel;
+    notificationAction.hidden = !currentNotificationUrl;
+    notificationAction.setAttribute('aria-label', `${buttonLabel} promotion`);
+
+    if (currentNotificationUrl) {
       notification.style.cursor = 'pointer';
       notification.title = 'Click to view';
     } else {
@@ -81,7 +89,14 @@
   }
 
   notification.addEventListener('click', (e) => {
-    if (currentNotificationUrl && e.target !== notificationClose) {
+    if (currentNotificationUrl && e.target !== notificationClose && e.target !== notificationAction) {
+      window.open(currentNotificationUrl, '_blank');
+    }
+  });
+
+  notificationAction.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (currentNotificationUrl) {
       window.open(currentNotificationUrl, '_blank');
     }
   });

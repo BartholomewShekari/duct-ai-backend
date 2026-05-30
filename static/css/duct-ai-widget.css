@@ -73,6 +73,22 @@
   color: #102a43;
 }
 
+.duct-ai-widget-notification-action {
+  border: none;
+  background: #1b3a6b;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.duct-ai-widget-notification-action:hover {
+  background: #15315a;
+}
+
 .duct-ai-widget-notification-close {
   border: none;
   background: transparent;
@@ -114,6 +130,11 @@
 
 .duct-ai-widget-notification.whatsapp .duct-ai-widget-notification-icon {
   background: #25d366;
+  color: #fff;
+}
+
+.duct-ai-widget-notification.marketplace .duct-ai-widget-notification-icon {
+  background: #1b3a6b;
   color: #fff;
 }
 

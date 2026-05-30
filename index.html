@@ -2210,6 +2210,31 @@ function normalizeVideoEntry(item, index) {
   };
 }
 
+function normalizePromoSource(rawSource) {
+  const source = (rawSource || '').toString().toLowerCase();
+  if (source.includes('facebook')) return 'facebook';
+  if (source.includes('instagram')) return 'instagram';
+  if (source.includes('youtube')) return 'youtube';
+  if (source.includes('tiktok')) return 'tiktok';
+  if (source.includes('whatsapp')) return 'whatsapp';
+  if (source.includes('linkedin')) return 'linkedin';
+  if (source.includes('twitter') || source === 'x') return 'twitter';
+  if (source.includes('marketplace')) return 'marketplace';
+  return 'marketplace';
+}
+
+function normalizePromoUrl(item) {
+  return item.url || item.link || item.href || item.sourceUrl || item.platformUrl || item.videoUrl || 'marketplace.html';
+}
+
+function showSocialPromotion(index) {
+  if (!Array.isArray(socialUpdates) || !socialUpdates.length) return;
+  const promo = socialUpdates[index % socialUpdates.length];
+  if (promo && window.DuctAIWidget && typeof window.DuctAIWidget.showPromoNotification === 'function') {
+    window.DuctAIWidget.showPromoNotification({ source: promo.source || 'marketplace', text: promo.text, url: promo.url });
+  }
+}
+
 async function loadMediaHub() {
   try {
     let data;
@@ -2249,7 +2274,9 @@ async function loadMediaHub() {
     if (Array.isArray(socialPayload) && socialPayload.length) {
       socialUpdates = socialPayload.map(item => ({
         text: item.title || item.desc || item.platform || 'New social media post available.',
-        note: item.desc || item.title || item.platform || 'View the latest post.'
+        note: item.desc || item.title || item.platform || 'View the latest post.',
+        source: normalizePromoSource(item.source || item.platform || item.type || ''),
+        url: normalizePromoUrl(item)
       }));
     }
   } catch (e) {
@@ -2263,6 +2290,7 @@ function setSocialUpdate(index) {
   const update = socialUpdates[currentSocialIndex];
   const textEl = document.getElementById('socialUpdateText');
   if (textEl) textEl.textContent = update.text;
+  showSocialPromotion(currentSocialIndex);
 }
 
 function rotateSocialUpdate() {
@@ -2321,6 +2349,7 @@ window.addEventListener('load', async () => {
   buildVideoPlaylist();
   setActiveVideo(0);
   setSocialUpdate(0);
+  showSocialPromotion(0);
   setInterval(rotateVideoText, 6000);
   setInterval(rotateSocialUpdate, 5200);
   setTimeout(() => {
