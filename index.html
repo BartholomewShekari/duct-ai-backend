@@ -3501,7 +3501,7 @@ function openWhatsAppProductSlider() {
   
   function loadWidgetScript() {
     const script = document.createElement('script');
-    script.src = 'duct-ai-widget.js?v=' + Date.now();
+    script.src = 'static/js/duct-ai-widget.js?v=' + Date.now();
     script.dataset.backendUrl = backendUrl;
     script.onload = function() {
       console.log('Duct AI widget loaded successfully');
@@ -3580,10 +3580,10 @@ function openWhatsAppProductSlider() {
 </script>
 
 <!-- Duct AI Widget CSS - Load immediately -->
-<link rel="stylesheet" href="duct-ai-widget.css?v=20260521">
+<link rel="stylesheet" href="static/css/duct-ai-widget.css?v=20260521">
 
 <!-- Duct AI Widget JS - Load immediately (no defer) -->
-<script src="duct-ai-widget.js?v=20260521" data-backend-url="https://interior-ecommerce-production.up.railway.app"></script>
+<script src="static/js/duct-ai-widget.js?v=20260521" data-backend-url="https://interior-ecommerce-production.up.railway.app"></script>
 
 <!-- Fallback: Ensure widget appears if external script fails -->
 <script>

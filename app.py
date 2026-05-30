@@ -413,6 +413,387 @@ def require_env_token(env_var_name: str):
     return decorator
 
 
+# ── Social Media & Promotions ────────────────────────────────────────────────
+
+# Social media account URLs (fallback sources)
+SOCIAL_ACCOUNT_URLS = {
+    "youtube": "https://www.youtube.com/c/InteriorDuctLtd",
+    "facebook": "https://www.facebook.com/interiorductltd",
+    "instagram": "https://www.instagram.com/interiorductltd",
+    "tiktok": "https://www.tiktok.com/@interiorductltd",
+    "twitter": "https://x.com/interiorductltd",
+    "linkedin": "https://www.linkedin.com/company/interiorductltd",
+}
+
+MARKETPLACE_URL = "https://interiorductltd.com/marketplace"
+
+# Social API credentials from environment
+YOUTUBE_API_KEY = _get_env_var("YOUTUBE_API_KEY")
+YOUTUBE_CHANNEL_ID = _get_env_var("YOUTUBE_CHANNEL_ID")
+
+INSTAGRAM_BUSINESS_ACCOUNT_ID = _get_env_var("INSTAGRAM_BUSINESS_ACCOUNT_ID")
+INSTAGRAM_ACCESS_TOKEN = _get_env_var("INSTAGRAM_ACCESS_TOKEN")
+
+FACEBOOK_PAGE_ID = _get_env_var("FACEBOOK_PAGE_ID")
+FACEBOOK_ACCESS_TOKEN = _get_env_var("FACEBOOK_ACCESS_TOKEN")
+
+TWITTER_USERNAME = _get_env_var("TWITTER_USERNAME")
+TWITTER_BEARER_TOKEN = _get_env_var("TWITTER_BEARER_TOKEN")
+
+LINKEDIN_ORGANIZATION_ID = _get_env_var("LINKEDIN_ORGANIZATION_ID")
+LINKEDIN_ACCESS_TOKEN = _get_env_var("LINKEDIN_ACCESS_TOKEN")
+
+# Feed cache (1 hour TTL)
+SOCIAL_FEED_CACHE = {"data": None, "timestamp": 0}
+SOCIAL_FEED_CACHE_TTL = 3600
+
+
+def _load_second_hand_products() -> list:
+    """Load marketplace products from JSON or parse marketplace.html."""
+    data = _read_json(os.path.join(BASE_DIR, "second_hand_products.json"), {})
+    products = data.get("products") if isinstance(data, dict) else None
+    if isinstance(products, list) and products:
+        return products
+
+    # Fallback: parse marketplace.html
+    marketplace_path = os.path.join(BASE_DIR, "marketplace.html")
+    if os.path.exists(marketplace_path):
+        try:
+            text = open(marketplace_path, "r", encoding="utf-8").read()
+            blocks = re.findall(
+                r'<img[^>]*src="(?P<img>[^"]+)"[^>]*>.*?<div[^>]*>\s*(?P<name>[^<]+?)\s*</div>.*?<p[^>]*>\s*(?P<desc>.*?)\s*</p>.*?onclick="openWhatsApp\(\'(?P<enquire>[^\']+)\'',
+                text,
+                re.S,
+            )
+            products = []
+            for img, name, desc, enquire in blocks:
+                products.append({
+                    "name": name.strip(),
+                    "description": re.sub(r"\s+", " ", desc.strip()),
+                    "image": img.strip(),
+                    "url": MARKETPLACE_URL,
+                    "source": "marketplace",
+                    "enquire": enquire.strip(),
+                })
+            if products:
+                return products
+        except Exception:
+            pass
+
+    # Fallback: static marketplace entries
+    return [
+        {
+            "name": "Industrial CNC Router",
+            "description": "Heavy-duty CNC cutting machine for furniture manufacturing and precision cabinetry.",
+            "image": "IDL_Product_branding/CNC_Router.jpg",
+            "url": MARKETPLACE_URL,
+            "source": "marketplace",
+        },
+        {
+            "name": "Automatic Edge Bander",
+            "description": "Commercial-grade edge banding machine for MDF, plywood, and furniture finishing.",
+            "image": "IDL_Product_branding/Edge_Bander.jpg",
+            "url": MARKETPLACE_URL,
+            "source": "marketplace",
+        },
+        {
+            "name": "Heavy-Duty Panel Saw",
+            "description": "Precision industrial panel saw for high-volume cutting and sheet sizing.",
+            "image": "IDL_Product_branding/Panel_Saw.jpg",
+            "url": MARKETPLACE_URL,
+            "source": "marketplace",
+        },
+    ]
+
+
+def _normalize_social_item(item):
+    """Normalize social media item to standard format."""
+    if not isinstance(item, dict):
+        return None
+    url = item.get("url") or item.get("link") or SOCIAL_ACCOUNT_URLS.get(item.get("source"), "")
+    text = item.get("text") or item.get("title") or item.get("caption") or item.get("message") or "New update available."
+    return {
+        "text": text,
+        "note": item.get("note") or item.get("description") or item.get("caption") or "Latest update.",
+        "source": item.get("source") or item.get("platform") or "marketplace",
+        "url": url,
+        "published_at": item.get("published_at") or item.get("timestamp") or item.get("created_at"),
+    }
+
+
+def _fetch_youtube_updates():
+    """Fetch latest YouTube videos from the channel."""
+    if not YOUTUBE_API_KEY or not YOUTUBE_CHANNEL_ID:
+        return []
+    try:
+        res = requests.get(
+            "https://www.googleapis.com/youtube/v3/search",
+            params={
+                "part": "snippet",
+                "channelId": YOUTUBE_CHANNEL_ID,
+                "order": "date",
+                "type": "video",
+                "maxResults": 5,
+                "key": YOUTUBE_API_KEY,
+            },
+            timeout=8,
+        )
+        if res.status_code != 200:
+            return []
+        data = res.json()
+        items = []
+        for item in data.get("items", []):
+            video_id = item.get("id", {}).get("videoId")
+            snippet = item.get("snippet", {})
+            if not video_id:
+                continue
+            items.append({
+                "source": "youtube",
+                "platform": "youtube",
+                "title": snippet.get("title", "YouTube update"),
+                "description": snippet.get("description", ""),
+                "url": f"https://www.youtube.com/watch?v={video_id}",
+                "published_at": snippet.get("publishedAt"),
+            })
+        return items
+    except Exception:
+        return []
+
+
+def _fetch_instagram_updates():
+    """Fetch latest Instagram posts."""
+    if not INSTAGRAM_BUSINESS_ACCOUNT_ID or not INSTAGRAM_ACCESS_TOKEN:
+        return []
+    try:
+        res = requests.get(
+            f"https://graph.instagram.com/{INSTAGRAM_BUSINESS_ACCOUNT_ID}/media",
+            params={
+                "fields": "id,caption,permalink,media_type,media_url,timestamp",
+                "access_token": INSTAGRAM_ACCESS_TOKEN,
+                "limit": 5,
+            },
+            timeout=8,
+        )
+        if res.status_code != 200:
+            return []
+        data = res.json()
+        items = []
+        for item in data.get("data", []):
+            items.append({
+                "source": "instagram",
+                "platform": "instagram",
+                "title": (item.get("caption") or "Instagram update").split("\n", 1)[0],
+                "description": item.get("caption", "Instagram update"),
+                "url": item.get("permalink") or SOCIAL_ACCOUNT_URLS["instagram"],
+                "published_at": item.get("timestamp"),
+            })
+        return items
+    except Exception:
+        return []
+
+
+def _fetch_facebook_updates():
+    """Fetch latest Facebook posts."""
+    if not FACEBOOK_PAGE_ID or not FACEBOOK_ACCESS_TOKEN:
+        return []
+    try:
+        res = requests.get(
+            f"https://graph.facebook.com/v17.0/{FACEBOOK_PAGE_ID}/posts",
+            params={
+                "fields": "message,permalink_url,created_time",
+                "access_token": FACEBOOK_ACCESS_TOKEN,
+                "limit": 5,
+            },
+            timeout=8,
+        )
+        if res.status_code != 200:
+            return []
+        data = res.json()
+        items = []
+        for item in data.get("data", []):
+            items.append({
+                "source": "facebook",
+                "platform": "facebook",
+                "title": (item.get("message") or "Facebook update").split("\n", 1)[0],
+                "description": item.get("message", "Facebook update"),
+                "url": item.get("permalink_url") or SOCIAL_ACCOUNT_URLS["facebook"],
+                "published_at": item.get("created_time"),
+            })
+        return items
+    except Exception:
+        return []
+
+
+def _fetch_x_updates():
+    """Fetch latest X (Twitter) posts."""
+    if not TWITTER_BEARER_TOKEN or not TWITTER_USERNAME:
+        return []
+    try:
+        headers = {"Authorization": f"Bearer {TWITTER_BEARER_TOKEN}"}
+        user_res = requests.get(
+            f"https://api.twitter.com/2/users/by/username/{TWITTER_USERNAME}",
+            headers=headers,
+            timeout=8,
+        )
+        if user_res.status_code != 200:
+            return []
+        user_data = user_res.json().get("data", {})
+        user_id = user_data.get("id")
+        if not user_id:
+            return []
+        tweets_res = requests.get(
+            f"https://api.twitter.com/2/users/{user_id}/tweets",
+            params={
+                "max_results": 5,
+                "tweet.fields": "created_at,author_id",
+            },
+            headers=headers,
+            timeout=8,
+        )
+        if tweets_res.status_code != 200:
+            return []
+        tweets_data = tweets_res.json()
+        items = []
+        for tweet in tweets_data.get("data", []):
+            items.append({
+                "source": "twitter",
+                "platform": "twitter",
+                "title": (tweet.get("text", "X update")).split("\n", 1)[0],
+                "description": tweet.get("text", "X update"),
+                "url": f"https://x.com/{TWITTER_USERNAME}/status/{tweet.get('id')}",
+                "published_at": tweet.get("created_at"),
+            })
+        return items
+    except Exception:
+        return []
+
+
+def _fetch_linkedin_updates():
+    """Fetch latest LinkedIn posts."""
+    if not LINKEDIN_ORGANIZATION_ID or not LINKEDIN_ACCESS_TOKEN:
+        return []
+    try:
+        headers = {
+            "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+            "X-Restli-Protocol-Version": "2.0.0",
+        }
+        res = requests.get(
+            "https://api.linkedin.com/v2/shares",
+            params={
+                "q": "owners",
+                "owners": f"urn:li:organization:{LINKEDIN_ORGANIZATION_ID}",
+                "sharesPerOwner": 5,
+                "sortBy": "LAST_MODIFIED",
+            },
+            headers=headers,
+            timeout=8,
+        )
+        if res.status_code != 200:
+            return []
+        data = res.json()
+        items = []
+        for item in data.get("elements", []):
+            text = item.get("text", {}).get("text", "LinkedIn update")
+            first = text.split("\n", 1)[0] if text else "LinkedIn update"
+            items.append({
+                "source": "linkedin",
+                "platform": "linkedin",
+                "title": first,
+                "description": text,
+                "url": SOCIAL_ACCOUNT_URLS["linkedin"],
+                "published_at": item.get("lastModified", {}).get("time"),
+            })
+        return items
+    except Exception:
+        return []
+
+
+def _fetch_tiktok_updates():
+    """Fetch latest TikTok updates (public scraping fallback)."""
+    try:
+        res = requests.get(
+            SOCIAL_ACCOUNT_URLS["tiktok"],
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            },
+            timeout=8,
+        )
+        if res.status_code == 200:
+            desc_match = re.search(r'<meta property="og:description" content="([^"]+)"', res.text)
+            title = desc_match.group(1) if desc_match else "New TikTok update"
+            return [{
+                "source": "tiktok",
+                "platform": "tiktok",
+                "title": title,
+                "description": title,
+                "url": SOCIAL_ACCOUNT_URLS["tiktok"],
+                "published_at": None,
+            }]
+    except Exception:
+        pass
+    return [{
+        "source": "tiktok",
+        "platform": "tiktok",
+        "title": "Visit our TikTok channel",
+        "description": "Latest short videos and behind-the-scenes content.",
+        "url": SOCIAL_ACCOUNT_URLS["tiktok"],
+        "published_at": None,
+    }]
+
+
+def _get_social_feed():
+    """Aggregate live social media feed and marketplace listings."""
+    now = time.time()
+    if SOCIAL_FEED_CACHE["data"] and now - SOCIAL_FEED_CACHE["timestamp"] < SOCIAL_FEED_CACHE_TTL:
+        return SOCIAL_FEED_CACHE["data"]
+
+    items = []
+    items.extend(_fetch_youtube_updates())
+    items.extend(_fetch_instagram_updates())
+    items.extend(_fetch_facebook_updates())
+    items.extend(_fetch_x_updates())
+    items.extend(_fetch_linkedin_updates())
+    items.extend(_fetch_tiktok_updates())
+
+    marketplace_products = _load_second_hand_products()
+    for product in marketplace_products[:6]:
+        items.append({
+            "source": "marketplace",
+            "platform": "marketplace",
+            "title": product.get("name", "Marketplace listing"),
+            "description": product.get("description", "Second-hand marketplace item."),
+            "url": product.get("url", MARKETPLACE_URL),
+            "published_at": None,
+        })
+
+    normalized = [item for item in (_normalize_social_item(i) for i in items) if item]
+    normalized.sort(key=lambda x: x.get("published_at") or "", reverse=True)
+
+    SOCIAL_FEED_CACHE["data"] = normalized
+    SOCIAL_FEED_CACHE["timestamp"] = now
+    return normalized
+
+
+def _get_media_videos():
+    """Extract video items from social feeds."""
+    videos = []
+    try:
+        youtube_items = _fetch_youtube_updates()
+        for item in youtube_items:
+            video_id = item.get("url", "").split("v=")[-1]
+            videos.append({
+                "type": "youtube",
+                "id": video_id,
+                "label": item.get("title", "YouTube video"),
+                "note": item.get("description", ""),
+                "badge": "VIDEO",
+                "url": item.get("url"),
+            })
+    except Exception:
+        pass
+    return videos
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
@@ -463,6 +844,24 @@ def api_health():
         "providers": providers,
         "revision": DEPLOYMENT_REVISION,
         "allowed_origins": _ALLOWED_ORIGINS_RAW,
+    })
+
+
+@app.route("/api/promotions", methods=["GET"])
+def get_promotions():
+    """Serve live social media feed and marketplace promotions."""
+    return jsonify({
+        "social": _get_social_feed(),
+        "second_hand": {"products": _load_second_hand_products()},
+        "cache_ttl": SOCIAL_FEED_CACHE_TTL,
+    })
+
+
+@app.route("/api/media/videos", methods=["GET"])
+def get_media_videos():
+    """Serve curated media video items."""
+    return jsonify({
+        "videos": _get_media_videos(),
     })
 
 
