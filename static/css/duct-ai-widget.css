@@ -178,6 +178,13 @@
   text-align: left;
 }
 
+.duct-ai-widget-provider {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: #556070;
+  opacity: 0.85;
+}
+
 .duct-ai-widget-footer {
   display: flex;
   gap: 0.5rem;

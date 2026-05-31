@@ -125,12 +125,28 @@
     }
   });
 
-  function addMessage(text, role) {
+  function addMessage(text, role, provider) {
     const item = document.createElement('div');
     item.className = `duct-ai-widget-message ${role}`;
     item.textContent = text;
+    if (role === 'assistant' && provider) {
+      const providerEl = document.createElement('div');
+      providerEl.className = 'duct-ai-widget-provider';
+      providerEl.textContent = `via ${provider.replace(/_/g, ' ')}`;
+      item.appendChild(providerEl);
+    }
     messages.appendChild(item);
     messages.scrollTop = messages.scrollHeight;
+  }
+
+  function getSessionId() {
+    const key = 'ductAiWidgetSessionId';
+    let sessionId = localStorage.getItem(key);
+    if (!sessionId) {
+      sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem(key, sessionId);
+    }
+    return sessionId;
   }
 
   async function sendMessage() {
@@ -143,13 +159,20 @@
       const response = await fetch(API_PATH, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: text }] })
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: text }],
+          session_id: getSessionId(),
+          context: {
+            page: window.location.pathname,
+            user_agent: navigator.userAgent
+          }
+        })
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Request failed');
       }
-      addMessage(data.reply || 'I’m sorry, I’m having trouble answering right now. Please try again in a moment or contact WhatsApp at +234 803 685 0229.', 'assistant');
+      addMessage(data.reply || 'I’m sorry, I’m having trouble answering right now. Please try again in a moment or contact WhatsApp at +234 803 685 0229.', 'assistant', data.provider);
     } catch (error) {
       addMessage('Error: ' + error.message, 'assistant');
     }

@@ -504,6 +504,7 @@ section{padding:6rem 0}
 .cmsg{max-width:82%;font-size:.82rem;line-height:1.65}
 .cmsg.ai{background:rgba(255,255,255,.07);border:1px solid rgba(196,168,130,.12);border-radius:0 10px 10px 10px;padding:.75rem 1rem;color:rgba(255,255,255,.75)}
 .cmsg.ai .mn{font-size:.64rem;color:var(--brown-pale);margin-bottom:.25rem;letter-spacing:.1em;text-transform:uppercase}
+.ai-provider-note{display:block;margin-top:.55rem;font-size:.75rem;line-height:1.35;color:rgba(255,255,255,.65);opacity:.9}
 .cmsg.user{background:linear-gradient(135deg,rgba(27,58,107,.6),rgba(42,82,152,.4));border:1px solid rgba(196,168,130,.2);border-radius:10px 0 10px 10px;padding:.75rem 1rem;color:#fff;align-self:flex-end}
 .typing{display:flex;gap:.28rem;align-items:center;padding:.65rem .9rem;background:rgba(255,255,255,.07);border-radius:0 10px 10px 10px;width:54px}
 .td{width:5px;height:5px;border-radius:50%;background:var(--brown-pale);animation:td .8s ease-in-out infinite}
@@ -2572,10 +2573,10 @@ let ductAiKb = null;
 
 function getBackendUrls() {
   const urls = [];
+  const configured = window.DUCT_AI_BACKEND_API_URL || window.DUCT_AI_BACKEND_URL || 'https://interior-ecommerce-production.up.railway.app';
   if (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     urls.push('http://localhost:5000');
   }
-  const configured = window.DUCT_AI_BACKEND_URL || 'https://interior-ecommerce-production.up.railway.app';
   if (configured) urls.push(configured);
   urls.push('https://interior-ecommerce-production.up.railway.app');
   return [...new Set(urls)];
@@ -2693,16 +2694,32 @@ function getSessionId() {
   return sessionId;
 }
 
-function addMessage(role, message) {
+function addMessage(role, message, providerNote) {
   const msgs = document.getElementById('chatMsgs');
   if (!msgs) return;
   const msgEl = document.createElement('div');
   msgEl.className = role === 'bot' ? 'cmsg ai' : 'cmsg user';
+
   if (role === 'bot') {
-    msgEl.innerHTML = '<div class="mn">Duct AI</div>' + (message || '');
+    const botName = document.createElement('div');
+    botName.className = 'mn';
+    botName.textContent = 'Duct AI';
+    msgEl.appendChild(botName);
+
+    const textNode = document.createElement('div');
+    textNode.textContent = message || '';
+    msgEl.appendChild(textNode);
+
+    if (providerNote) {
+      const note = document.createElement('small');
+      note.className = 'ai-provider-note';
+      note.textContent = providerNote;
+      msgEl.appendChild(note);
+    }
   } else {
     msgEl.textContent = message;
   }
+
   msgs.appendChild(msgEl);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -2718,7 +2735,7 @@ async function sendMsg() {
   const kb = await loadDuctAiKb();
   const localReply = getLocalKbReply(message, kb);
   if (localReply) {
-    addMessage('bot', aiLuxuryTone(localReply));
+    addMessage('bot', aiLuxuryTone(localReply), 'Answered by local knowledge base');
     logQueryForLearning(message, localReply);
     return;
   }
@@ -2730,13 +2747,13 @@ async function sendMsg() {
 
     for (const backendUrl of backendUrls) {
       try {
-        res = await fetchWithTimeout(`${backendUrl.replace(/\/$/, '')}/ai-query`, {
+        res = await fetchWithTimeout(`${backendUrl.replace(/\/$/, '')}/api/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            query: message,
+            messages: [{ role: 'user', content: message }],
             session_id: getSessionId(),
             context: {
               page: window.location.pathname,
@@ -2770,11 +2787,13 @@ async function sendMsg() {
 
     const data = await res.json();
     const reply = data.answer || data.reply;
+    const provider = data.provider || data.source;
 
     if (reply) {
-      addMessage('bot', reply);
+      const providerNote = provider ? `Answered by ${provider.replace(/_/g, ' ')}` : '';
+      addMessage('bot', reply, providerNote);
       if (data.recommendation) {
-        addMessage('bot', data.recommendation);
+        addMessage('bot', data.recommendation, providerNote);
       }
       if (Array.isArray(data.actions)) {
         processChatActions(data.actions);
