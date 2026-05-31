@@ -373,6 +373,35 @@
       try {
         console.log('Loading marketplace products...');
 
+        const fallbackProducts = {
+          products: [
+            {
+              id: 'industrial-cnc-router',
+              name: 'Industrial CNC Router',
+              description: 'Heavy-duty CNC cutting machine for furniture manufacturing and precision cabinetry.',
+              image: 'IDL_Product_branding/CNC_Router.jpg',
+              url: 'marketplace.html',
+              source: 'marketplace'
+            },
+            {
+              id: 'automatic-edge-bander',
+              name: 'Automatic Edge Bander',
+              description: 'Commercial-grade edge banding machine for MDF, plywood, and furniture finishing.',
+              image: 'IDL_Product_branding/Edge_Bander.jpg',
+              url: 'marketplace.html',
+              source: 'marketplace'
+            },
+            {
+              id: 'heavy-duty-panel-saw',
+              name: 'Heavy-Duty Panel Saw',
+              description: 'Precision industrial panel saw for high-volume cutting and sheet sizing.',
+              image: 'IDL_Product_branding/Panel_Saw.jpg',
+              url: 'marketplace.html',
+              source: 'marketplace'
+            }
+          ]
+        };
+
         // Try to fetch from Flask API endpoint first
         let res = await fetch('/api/promotions').catch(() => null);
         let data;
@@ -387,11 +416,13 @@
           if (!res || !res.ok) {
             res = await fetch('/second_hand_products.json').catch(() => null);
           }
-          if (!res || !res.ok) {
-            throw new Error('Could not find second_hand_products.json file');
+          if (res && res.ok) {
+            data = await res.json();
+            console.log('Products loaded from JSON:', data);
+          } else {
+            console.warn('No JSON fallback available, using hardcoded placeholder products.');
+            data = fallbackProducts;
           }
-          data = await res.json();
-          console.log('Products loaded from JSON:', data);
         }
 
         const container = document.getElementById('productsContainer');

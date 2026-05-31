@@ -1,0 +1,28 @@
+{
+  "products": [
+    {
+      "id": "industrial-cnc-router",
+      "name": "Industrial CNC Router",
+      "description": "Heavy-duty CNC cutting machine for furniture manufacturing and precision cabinetry.",
+      "image": "IDL_Product_branding/CNC_Router.jpg",
+      "url": "marketplace.html",
+      "source": "marketplace"
+    },
+    {
+      "id": "automatic-edge-bander",
+      "name": "Automatic Edge Bander",
+      "description": "Commercial-grade edge banding machine for MDF, plywood, and furniture finishing.",
+      "image": "IDL_Product_branding/Edge_Bander.jpg",
+      "url": "marketplace.html",
+      "source": "marketplace"
+    },
+    {
+      "id": "heavy-duty-panel-saw",
+      "name": "Heavy-Duty Panel Saw",
+      "description": "Precision industrial panel saw for high-volume cutting and sheet sizing.",
+      "image": "IDL_Product_branding/Panel_Saw.jpg",
+      "url": "marketplace.html",
+      "source": "marketplace"
+    }
+  ]
+}
