@@ -1,3 +1,16 @@
+/**
+ * Admin Panel — Marketplace, Images & AI Assistant Management
+ * Version: 2026-05-31 Enhanced
+ * 
+ * Features:
+ * - Marketplace second-hand machine cards with image upload
+ * - Admin authentication (default: admin/admin)
+ * - Social media feed sync with platform icons
+ * - AI Provider smart responses & context-awareness
+ * - Self-learning from past conversations & knowledge base
+ * - Promo notification icons for social platforms
+ */
+
 // ================= SECTION SWITCHING =================
 function showSection(section) {
   const sections = [
@@ -217,7 +230,39 @@ if (contentForm) {
 // ================= PRODUCTS (FIXED) =================
 let products = [];
 
-// ================= MARKETPLACE MANAGEMENT =================
+// ================= SOCIAL PLATFORM ICONS =================
+const SOCIAL_ICONS = {
+  'facebook': '👍',
+  'instagram': '📷',
+  'twitter': '𝕏',
+  'tiktok': '🎵',
+  'youtube': '▶️',
+  'linkedin': '💼',
+  'whatsapp': '💬',
+  'marketplace': '🛍️',
+  'default': '📢'
+};
+
+function getSocialIcon(platform) {
+  return SOCIAL_ICONS[platform?.toLowerCase()] || SOCIAL_ICONS.default;
+}
+
+function getSocialColor(platform) {
+  const colors = {
+    'facebook': '#1877F2',
+    'instagram': '#E1306C',
+    'twitter': '#000000',
+    'tiktok': '#000000',
+    'youtube': '#FF0000',
+    'linkedin': '#0A66C2',
+    'whatsapp': '#25D366',
+    'marketplace': '#F3A400',
+    'default': '#666666'
+  };
+  return colors[platform?.toLowerCase()] || colors.default;
+}
+
+// ================= MARKETPLACE MANAGEMENT WITH IMAGE UPLOADS =================
 let marketplace = { products: [] };
 
 async function loadMarketplace() {
@@ -235,36 +280,143 @@ function renderMarketplace() {
   const el = document.getElementById('marketplaceList');
   if (!el) return;
   el.innerHTML = '';
+  
   marketplace.products.forEach((p, idx) => {
     const row = document.createElement('div');
-    row.style.cssText = 'padding:0.6rem;border-bottom:1px solid #eee;display:flex;gap:0.6rem;align-items:center;'
-    row.innerHTML = `
-      <div style="width:72px"><img src="${p.image||'IDL_Product_branding/placeholder.jpg'}" style="width:72px;height:56px;object-fit:cover;border-radius:4px;"></div>
-      <div style="flex:1">
-        <strong>${p.name}</strong><br>
-        <input type="text" data-idx="${idx}" data-field="description" value="${(p.description||'').replace(/"/g,'&quot;')}" style="width:100%">
+    row.style.cssText = 'padding:1rem;border:1px solid #ddd;margin-bottom:1rem;border-radius:6px;display:grid;grid-template-columns:100px 1fr 1fr auto;gap:1rem;align-items:start;'
+    
+    const imagePreview = document.createElement('div');
+    imagePreview.style.cssText = 'width:100px;height:100px;border-radius:6px;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;';
+    
+    if (p.image && p.image.trim()) {
+      const img = document.createElement('img');
+      img.src = p.image;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+      imagePreview.appendChild(img);
+    } else {
+      imagePreview.innerHTML = '<span style="font-size:2rem;opacity:0.3;">📦</span>';
+    }
+    
+    const uploadLabel = document.createElement('label');
+    uploadLabel.style.cssText = 'position:absolute;bottom:0;right:0;background:#007bff;color:white;padding:0.3rem;border-radius:3px;cursor:pointer;font-size:0.7rem;';
+    uploadLabel.innerHTML = '📤';
+    uploadLabel.title = 'Upload image';
+    
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    fileInput.onchange = (e) => handleMarketplaceImageUpload(idx, e);
+    
+    uploadLabel.appendChild(fileInput);
+    imagePreview.appendChild(uploadLabel);
+    
+    // Product details section
+    const detailsDiv = document.createElement('div');
+    detailsDiv.innerHTML = `
+      <div style="margin-bottom:0.5rem;">
+        <label style="display:block;font-weight:bold;margin-bottom:0.25rem;">Name</label>
+        <input type="text" data-idx="${idx}" data-field="name" value="${(p.name||'').replace(/"/g,'&quot;')}" 
+               onchange="updateMarketplaceField(${idx}, 'name', this.value)" 
+               style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:4px;">
       </div>
       <div>
-        <select data-idx="${idx}" data-field="image"></select>
+        <label style="display:block;font-weight:bold;margin-bottom:0.25rem;">Description</label>
+        <textarea data-idx="${idx}" data-field="description" 
+                  onchange="updateMarketplaceField(${idx}, 'description', this.value)" 
+                  style="width:100%;padding:0.5rem;border:1px solid #ddd;border-radius:4px;height:80px;resize:vertical;">${(p.description||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
       </div>
     `;
+    
+    // Social promotion section
+    const socialDiv = document.createElement('div');
+    socialDiv.innerHTML = `
+      <div style="margin-bottom:0.5rem;">
+        <label style="display:block;font-weight:bold;margin-bottom:0.25rem;">Promote On</label>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          ${Object.keys(SOCIAL_ICONS).filter(p => p !== 'default').map(platform => `
+            <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;padding:0.4rem;border:1px solid #ddd;border-radius:4px;background:${(p.promotedOn || []).includes(platform) ? getSocialColor(platform) : '#f9f9f9'};color:${(p.promotedOn || []).includes(platform) ? '#fff' : '#333'};">
+              <input type="checkbox" ${(p.promotedOn || []).includes(platform) ? 'checked' : ''} 
+                     onchange="togglePromotionPlatform(${idx}, '${platform}', this.checked)" 
+                     style="cursor:pointer;">
+              ${getSocialIcon(platform)} ${platform}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    
+    // Action buttons
+    const actionsDiv = document.createElement('div');
+    actionsDiv.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;';
+    actionsDiv.innerHTML = `
+      <button onclick="removeMarketplaceProduct(${idx})" 
+              style="padding:0.5rem;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;">Delete</button>
+    `;
+    
+    row.appendChild(imagePreview);
+    row.appendChild(detailsDiv);
+    row.appendChild(socialDiv);
+    row.appendChild(actionsDiv);
+    
     el.appendChild(row);
   });
+}
 
-  // populate image selectors
-  fetchImages().then(list => {
-    const selects = document.querySelectorAll('#marketplaceList select');
-    selects.forEach(sel => {
-      const idx = sel.dataset.idx;
-      sel.innerHTML = '<option value="">(select image)</option>' + (list||[]).map(f => `<option value="${f}">${f}</option>`).join('');
-      const cur = marketplace.products[idx].image || '';
-      if (cur) sel.value = cur;
-      sel.addEventListener('change', (e) => {
-        marketplace.products[idx].image = e.target.value;
-        renderMarketplace();
-      });
+function updateMarketplaceField(idx, field, value) {
+  if (marketplace.products[idx]) {
+    marketplace.products[idx][field] = value;
+  }
+}
+
+function togglePromotionPlatform(idx, platform, checked) {
+  if (!marketplace.products[idx]) return;
+  if (!marketplace.products[idx].promotedOn) {
+    marketplace.products[idx].promotedOn = [];
+  }
+  
+  if (checked) {
+    if (!marketplace.products[idx].promotedOn.includes(platform)) {
+      marketplace.products[idx].promotedOn.push(platform);
+    }
+  } else {
+    marketplace.products[idx].promotedOn = marketplace.products[idx].promotedOn.filter(p => p !== platform);
+  }
+  renderMarketplace();
+}
+
+function removeMarketplaceProduct(idx) {
+  if (confirm('Delete this product?')) {
+    marketplace.products.splice(idx, 1);
+    renderMarketplace();
+  }
+}
+
+async function handleMarketplaceImageUpload(idx, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('product_idx', idx);
+  
+  try {
+    const res = await fetch('/api/admin/upload-marketplace-image', {
+      method: 'POST',
+      body: formData
     });
-  }).catch(()=>{});
+    
+    if (res.ok) {
+      const data = await res.json();
+      marketplace.products[idx].image = data.image_url;
+      renderMarketplace();
+    } else {
+      alert('Image upload failed');
+    }
+  } catch (e) {
+    console.error('Image upload error:', e);
+    alert('Error uploading image: ' + e.message);
+  }
 }
 
 async function saveMarketplace() {
@@ -290,7 +442,10 @@ async function syncSocialFeeds() {
   try {
     const res = await fetch('/api/social-sync', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'}
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        marketplace_products: marketplace.products
+      })
     });
 
     if (!res.ok) {
@@ -304,6 +459,7 @@ async function syncSocialFeeds() {
         msg.style.display = '';
         setTimeout(() => msg.style.display = 'none', 3000);
       }
+      console.log('Social feeds synced:', data);
     } else {
       alert('Sync completed but no new data was returned.');
     }
@@ -320,7 +476,7 @@ async function loadProducts() {
   renderProducts();
 }
 
-// ================= PART 4: CHAT LOGS (ADMIN DASHBOARD) =================
+// ================= CHAT LOGS (ADMIN DASHBOARD) =================
 async function loadChatLogs() {
   const container = document.getElementById('chatLogsContainer');
   container.innerHTML = '<p style="color:#999;">Loading chat logs...</p>';
@@ -370,7 +526,7 @@ function exportChatLogs() {
   alert('CSV export functionality coming soon!');
 }
 
-// ================= PART 5: ANALYTICS DASHBOARD =================
+// ================= ANALYTICS DASHBOARD =================
 async function loadAnalytics() {
   try {
     const res = await fetch('/admin/analytics');
