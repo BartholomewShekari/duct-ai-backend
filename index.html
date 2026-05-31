@@ -484,6 +484,17 @@ section{padding:6rem 0}
 .chat-hdr{padding:.9rem 1.3rem;background:rgba(255,255,255,.06);border-bottom:1px solid rgba(196,168,130,.15);display:flex;align-items:center;gap:.85rem}
 .chat-av{width:36px;height:36px;border-radius:50%;overflow:hidden;border:1.5px solid var(--brown-pale);flex-shrink:0}
 .chat-av img{width:100%;height:100%;object-fit:cover}
+.chat-promo{display:flex;align-items:center;gap:.9rem;padding:.9rem 1rem;background:rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);}
+.chat-promo-icon{width:38px;height:38px;min-width:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#1b3a6b;color:#fff;box-shadow:0 10px 25px rgba(0,0,0,.08);}
+.chat-promo-icon svg{width:22px;height:22px;}
+.chat-promo-copy{flex:1;display:flex;flex-direction:column;gap:.25rem;}
+.chat-promo-title{font-size:.95rem;font-weight:700;color:#fff;}
+.chat-promo-text{font-size:.85rem;color:rgba(255,255,255,.78);line-height:1.3;max-height:2.8rem;overflow:hidden;text-overflow:ellipsis;}
+.chat-promo-action{border:none;background:#fff;color:#1b3a6b;font-weight:700;padding:.55rem 1rem;border-radius:999px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.08);}
+.chat-promo-media{padding:0 1rem 1rem;}
+.chat-promo-media-card{display:flex;align-items:center;gap:.8rem;padding:.8rem;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);}
+.chat-promo-media-thumb{width:72px;height:72px;border-radius:16px;background:linear-gradient(135deg,rgba(27,58,107,.5),rgba(123,92,62,.5));display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700;text-align:center;}
+.chat-promo-media-label{color:rgba(255,255,255,.85);font-size:.86rem;font-weight:600;}
 .chat-name-b .cn{font-size:.88rem;font-weight:500;color:#fff}
 .chat-name-b .cr{font-size:.66rem;color:rgba(255,255,255,.5)}
 .chat-online{margin-left:auto;font-size:.66rem;color:var(--brown-pale);display:flex;align-items:center;gap:.35rem}
@@ -1755,6 +1766,20 @@ footer{background:var(--bg-dark);color:#fff;padding:5rem 0 2rem}
           </div>
           <div class="chat-online"><span class="pulse"></span>Online</div>
         </div>
+        <div class="chat-promo" id="chatPromo" hidden>
+          <div class="chat-promo-icon" id="chatPromoIcon"></div>
+          <div class="chat-promo-copy">
+            <div class="chat-promo-title" id="chatPromoTitle">Promotion</div>
+            <div class="chat-promo-text" id="chatPromoText">Latest social post or marketplace item.</div>
+          </div>
+          <button class="chat-promo-action" id="chatPromoAction" type="button">View</button>
+        </div>
+        <div class="chat-promo-media" id="chatPromoMedia" hidden>
+          <div class="chat-promo-media-card">
+            <div class="chat-promo-media-thumb" id="chatPromoMediaThumb"></div>
+            <div class="chat-promo-media-label">Marketplace preview</div>
+          </div>
+        </div>
         <div class="chat-msgs" id="chatMsgs">
           <div class="cmsg ai"><div class="mn">Duct AI</div>Welcome to Interior Duct Ltd! I'm your luxury design advisor. I can help you:  
 <strong style="color:var(--brown-pale)">✓ Browse furniture</strong> by type (sofas, tables, doors, kitchens, bedrooms, living rooms, office)  
@@ -2227,12 +2252,76 @@ function normalizePromoUrl(item) {
   return item.url || item.link || item.href || item.sourceUrl || item.platformUrl || item.videoUrl || 'marketplace.html';
 }
 
+function getPromoIconSvg(source) {
+  const icons = {
+    marketplace: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 4h18v4H3V4zm0 6h18v10H3V10zm2 2v6h14v-6H5z"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.12 8.44 9.88v-6.99H7.9v-2.89h2.54V9.44c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.23.2 2.23.2v2.45h-1.25c-1.23 0-1.61.77-1.61 1.56v1.88h2.74l-.44 2.89h-2.3v6.99C18.34 21.12 22 16.99 22 12z"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17 2H7C4.24 2 2 4.24 2 7v10c0 2.76 2.24 5 5 5h10c2.76 0 5-2.24 5-5V7c0-2.76-2.24-5-5-5zm3 15c0 1.65-1.35 3-3 3H7c-1.65 0-3-1.35-3-3V7c0-1.65 1.35-3 3-3h10c1.65 0 3 1.35 3 3v10zm-5-9a4 4 0 100 8 4 4 0 000-8zm0 6.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5zm3.9-6.75a1 1 0 11-2 0 1 1 0 012 0z"/></svg>',
+    youtube: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 15l5.19-3L10 9v6zm12-3c0-1.4-.12-2.6-.35-3.6-.23-1-.96-1.8-1.94-2.04C18.58 6.98 15.4 6 12 6s-6.58.98-7.71.36c-.98.24-1.71 1.04-1.94 2.04C2.12 9.4 2 10.6 2 12s.12 2.6.35 3.6c.23 1 1 1.8 1.94 2.04C5.42 17.02 8.6 18 12 18s6.58-.98 7.71-.36c.98-.24 1.71-1.04 1.94-2.04.23-1 .35-2.2.35-3.6z"/></svg>',
+    linkedin: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM3 8.88h3.96V21H3V8.88zM9.92 8.88h3.8v1.65h.05c.53-1 1.82-2.05 3.75-2.05 4 0 4.74 2.62 4.74 6.02V21h-3.96v-5.4c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.08 1.4-2.08 2.85V21h-3.96V8.88z"/></svg>',
+    twitter: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.46 6c-.77.35-1.6.59-2.47.69a4.3 4.3 0 001.88-2.38 8.6 8.6 0 01-2.72 1.04 4.28 4.28 0 00-7.3 3.9A12.13 12.13 0 013 4.79a4.28 4.28 0 001.33 5.71 4.22 4.22 0 01-1.94-.54v.05a4.28 4.28 0 003.43 4.2 4.27 4.27 0 01-1.93.07 4.28 4.28 0 003.99 2.97A8.58 8.58 0 012 19.54a12.08 12.08 0 006.56 1.92c7.88 0 12.2-6.53 12.2-12.19 0-.19 0-.37-.01-.56A8.72 8.72 0 0022.46 6z"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.78 2h2.7v.25a5.34 5.34 0 01-2.82-.25c-.2.6-.55 1.18-1.05 1.59-.9.75-2.07 1.14-3.35 1.14a6 6 0 01-6-6v14h3.75v-7.4A3.75 3.75 0 019.96 5.5c.3 0 .6 0 .9.05v3.4c-.25-.05-.5-.1-.75-.1a1.88 1.88 0 00-1.88 1.88 1.92 1.92 0 001.9 1.9 1.92 1.92 0 001.88-1.9V2h2.7v8.37a5.32 5.32 0 01-2.58-.71v2.55a8 8 0 004.2 1.12V2z"/></svg>',
+    whatsapp: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.83 7.17a5.76 5.76 0 01-1.64-1.09 1.38 1.38 0 00-1.15-.34 5.06 5.06 0 00-1.78.28 1.66 1.66 0 00-.9.56 5.6 5.6 0 00-1.18 1.72 1.46 1.46 0 00-.09 1.12 15.4 15.4 0 003.03 4.8 15.77 15.77 0 004.8 3.04 1.48 1.48 0 001.12-.09 5.6 5.6 0 001.72-1.18 1.67 1.67 0 00.56-.9 5.05 5.05 0 00.28-1.78 1.39 1.39 0 00-.34-1.15 5.83 5.83 0 01-1.09-1.64c-.3-.65-.75-1.13-1.68-1.97-.93-.85-1.6-1.06-2.24-1.36z"/></svg>'
+  };
+  return icons[source] || icons.marketplace;
+}
+
+function encodeSvgIcon(source) {
+  const svg = getPromoIconSvg(source);
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function updateChatPromotion(index) {
+  if (!Array.isArray(socialUpdates) || socialUpdates.length === 0) return;
+  const promo = socialUpdates[index % socialUpdates.length];
+  if (!promo) return;
+
+  const promoEl = document.getElementById('chatPromo');
+  const promoIcon = document.getElementById('chatPromoIcon');
+  const promoTitle = document.getElementById('chatPromoTitle');
+  const promoText = document.getElementById('chatPromoText');
+  const promoAction = document.getElementById('chatPromoAction');
+  const promoMedia = document.getElementById('chatPromoMedia');
+  const avatarImg = document.querySelector('.chat-av img');
+
+  const source = promo.source || 'marketplace';
+  const url = promo.url || (source === 'marketplace' ? 'marketplace.html' : '');
+  const title = source === 'marketplace' ? 'For Sale' : `New from ${source.charAt(0).toUpperCase() + source.slice(1)}`;
+  const buttonLabel = source === 'marketplace' ? 'Open' : 'View';
+
+  if (promoEl) promoEl.hidden = false;
+  if (promoIcon) promoIcon.innerHTML = getPromoIconSvg(source);
+  if (promoTitle) promoTitle.textContent = title;
+  if (promoText) promoText.textContent = promo.text;
+  if (promoAction) {
+    promoAction.textContent = buttonLabel;
+    promoAction.onclick = () => { if (url) window.open(url, '_blank'); };
+  }
+  if (avatarImg) {
+    avatarImg.src = encodeSvgIcon(source);
+    avatarImg.alt = `${source} icon`;
+  }
+
+  if (promoMedia) {
+    promoMedia.hidden = source !== 'marketplace';
+    if (!promoMedia.hidden) {
+      const thumb = document.getElementById('chatPromoMediaThumb');
+      if (thumb) thumb.textContent = 'MACHINES';
+    }
+  }
+
+  if (window.DuctAIWidget && typeof window.DuctAIWidget.showPromoNotification === 'function') {
+    window.DuctAIWidget.showPromoNotification({ source, text: promo.text, url });
+  }
+}
+
 function showSocialPromotion(index) {
   if (!Array.isArray(socialUpdates) || !socialUpdates.length) return;
   const promo = socialUpdates[index % socialUpdates.length];
   if (promo && window.DuctAIWidget && typeof window.DuctAIWidget.showPromoNotification === 'function') {
     window.DuctAIWidget.showPromoNotification({ source: promo.source || 'marketplace', text: promo.text, url: promo.url });
   }
+  updateChatPromotion(index);
 }
 
 async function loadMediaHub() {
@@ -3409,11 +3498,10 @@ async function loadContent() {
 loadContent();
 </script>
 <script src="hero-popup-slider.js"></script>
-<script src="duct-ai-assistant.js"></script>
 <script src="static/payment.js"></script>
-<!-- Duct AI Chat Widget (deprecated old versions removed - using new production widget) -->
+<!-- Duct AI Chat Widget (legacy assistant removed) -->
 
-<!-- Duct AI floating button replacement removed; using the new floating AI widget instead -->
+<!-- Duct AI floating button replacement removed; using the new production widget instead -->
 <script>
 // Floating WhatsApp button for product image slider
 function openWhatsAppProductSlider() {
